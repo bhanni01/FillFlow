@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Data Merger</title>
+  <link rel="stylesheet" href="taskpane.css" />
+
+  <!-- Office.js -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+  <!-- SheetJS from CDN -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h1>Word Data Merger</h1>
+    <p class="subtitle">Fill content controls from Excel data</p>
+  </div>
+
+  <!-- Step 1: File Upload -->
+  <section class="step" id="step-upload">
+    <div class="step-label">1 &mdash; Upload Excel File</div>
+    <label class="file-label" for="file-input">
+      <span id="file-name-display">Choose .xlsx file&hellip;</span>
+      <input type="file" id="file-input" accept=".xlsx,.xls" />
+    </label>
+  </section>
+
+  <!-- Step 2: Preview -->
+  <section class="step hidden" id="step-preview">
+    <div class="step-label">2 &mdash; Data Preview</div>
+    <div id="preview-container">
+      <div class="scroll-table-wrap">
+        <table id="preview-table"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 3: Row selection -->
+  <section class="step hidden" id="step-rows">
+    <div class="step-label">3 &mdash; Select Rows</div>
+
+    <div class="field-row">
+      <label for="flat-row">Flat data row (1-based):</label>
+      <input type="number" id="flat-row" min="1" value="2" />
+    </div>
+
+    <div class="field-row">
+      <label>Line-item rows (1-based, inclusive):</label>
+      <div class="inline-inputs">
+        <input type="number" id="line-start" min="1" placeholder="Start" />
+        <span>to</span>
+        <input type="number" id="line-end" min="1" placeholder="End" />
+      </div>
+    </div>
+
+    <button class="btn secondary" id="btn-scan-doc">Scan Document &amp; Map Columns</button>
+  </section>
+
+  <!-- Step 4: Column Mapping -->
+  <section class="step hidden" id="step-mapping">
+    <div class="step-label">4 &mdash; Column Mapping</div>
+    <p class="hint">Auto-matched by name similarity. Override any mapping below.</p>
+
+    <div class="mapping-group">
+      <div class="mapping-subhead">Flat Fields</div>
+      <div id="flat-mapping-rows"></div>
+    </div>
+
+    <div class="mapping-group">
+      <div class="mapping-subhead">Line Item Fields</div>
+      <div id="item-mapping-rows"></div>
+    </div>
+
+    <button class="btn primary" id="btn-merge">Merge into Document</button>
+  </section>
+
+  <!-- Status area -->
+  <section id="status-area" class="hidden">
+    <div id="status-message"></div>
+  </section>
+
+  <script src="taskpane.js"></script>
+</body>
+</html>
