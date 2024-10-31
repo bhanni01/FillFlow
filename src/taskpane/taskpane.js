@@ -1,9 +1,11 @@
-/* FillFlow — taskpane.js  (v0.3 — preview + row selection) */
+/* FillFlow — taskpane.js  (v0.4 — doc scanning) */
 
 var state = {
-  workbook: null,
-  headers:  [],
-  rows:     []
+  workbook:    null,
+  headers:     [],
+  rows:        [],
+  docFlatTags: [],
+  docItemTags: []
 };
 
 Office.onReady(function (info) {
@@ -19,39 +21,27 @@ function onFileChange(evt) {
   var file = evt.target.files[0];
   if (!file) return;
   document.getElementById("file-name-display").textContent = file.name;
-
   var reader = new FileReader();
   reader.onload = function (e) {
     try {
       var data = new Uint8Array(e.target.result);
       state.workbook = XLSX.read(data, { type: "array", cellDates: true });
-
-      var sheetName = state.workbook.SheetNames[0];
-      var ws = state.workbook.Sheets[sheetName];
+      var ws = state.workbook.Sheets[state.workbook.SheetNames[0]];
       var aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-
-      if (!aoa || aoa.length === 0) { showStatus("Worksheet appears empty.", "error"); return; }
-
-      state.headers = aoa[0].map(function (h) { return String(h); });
+      if (!aoa || !aoa.length) { showStatus("Worksheet appears empty.", "error"); return; }
+      state.headers = aoa[0].map(String);
       state.rows = [];
       for (var r = 1; r < aoa.length; r++) {
         var obj = {};
-        for (var c = 0; c < state.headers.length; c++) {
-          obj[state.headers[c]] = aoa[r][c] !== undefined ? aoa[r][c] : "";
-        }
+        state.headers.forEach(function (h, c) { obj[h] = aoa[r][c] !== undefined ? aoa[r][c] : ""; });
         state.rows.push(obj);
       }
-
       buildPreviewTable(aoa);
-      document.getElementById("flat-row").value = 2;
+      document.getElementById("flat-row").value   = 2;
       document.getElementById("line-start").value = 3;
-      document.getElementById("line-end").value = aoa.length;
-      show("step-preview");
-      show("step-rows");
-      hideStatus();
-    } catch (err) {
-      showStatus("Failed to parse file: " + err.message, "error");
-    }
+      document.getElementById("line-end").value   = aoa.length;
+      show("step-preview"); show("step-rows"); hideStatus();
+    } catch (err) { showStatus("Parse error: " + err.message, "error"); }
   };
   reader.readAsArrayBuffer(file);
 }
@@ -59,47 +49,62 @@ function onFileChange(evt) {
 function buildPreviewTable(aoa) {
   var tbl = document.getElementById("preview-table");
   tbl.innerHTML = "";
-
   var thead = document.createElement("thead");
   var trh = document.createElement("tr");
   addCell(trh, "th", "#");
   aoa[0].forEach(function (h) { addCell(trh, "th", String(h)); });
-  thead.appendChild(trh);
-  tbl.appendChild(thead);
-
+  thead.appendChild(trh); tbl.appendChild(thead);
   var tbody = document.createElement("tbody");
   for (var r = 1; r < aoa.length; r++) {
     var tr = document.createElement("tr");
     addCell(tr, "td", String(r + 1));
-    aoa[r].forEach(function (cell) { addCell(tr, "td", formatCell(cell)); });
+    aoa[r].forEach(function (c) { addCell(tr, "td", formatCell(c)); });
     tbody.appendChild(tr);
   }
   tbl.appendChild(tbody);
 }
 
-function addCell(row, tag, text) {
-  var cell = document.createElement(tag);
-  cell.textContent = text;
-  row.appendChild(cell);
-}
-
-function formatCell(val) {
-  if (val === null || val === undefined) return "";
-  if (val instanceof Date) return val.toLocaleDateString();
-  return String(val);
-}
-
 function onScanDoc() {
-  showStatus("(document scanning not yet implemented)", "info");
+  showStatus("Scanning document…", "info");
+  document.getElementById("btn-scan-doc").disabled = true;
+  Word.run(function (context) {
+    var controls = context.document.contentControls;
+    controls.load("tag,type");
+    return context.sync().then(function () {
+      state.docFlatTags = [];
+      state.docItemTags = [];
+      for (var i = 0; i < controls.items.length; i++) {
+        var tag = (controls.items[i].tag || "").trim();
+        if (!tag) continue;
+        if (tag.toLowerCase().startsWith("item_")) state.docItemTags.push(tag);
+        else state.docFlatTags.push(tag);
+      }
+      state.docFlatTags = unique(state.docFlatTags);
+      state.docItemTags = unique(state.docItemTags);
+      showStatus(
+        "Found " + state.docFlatTags.length + " flat tags, " +
+        state.docItemTags.length + " item tags.",
+        "success"
+      );
+      document.getElementById("btn-scan-doc").disabled = false;
+    });
+  }).catch(function (err) {
+    showStatus("Scan error: " + err.message, "error");
+    document.getElementById("btn-scan-doc").disabled = false;
+  });
 }
 
-function show(id)      { var el = document.getElementById(id); if (el) el.classList.remove("hidden"); }
-function hide(id)      { var el = document.getElementById(id); if (el) el.classList.add("hidden"); }
-function hideStatus()  { hide("status-area"); }
-
+function unique(arr) {
+  var seen = {}; return arr.filter(function (v) { if (seen[v]) return false; seen[v]=true; return true; });
+}
+function addCell(row, tag, text) { var c=document.createElement(tag); c.textContent=text; row.appendChild(c); }
+function formatCell(v) { if(v===null||v===undefined) return ""; if(v instanceof Date) return v.toLocaleDateString(); return String(v); }
+function show(id)     { var e=document.getElementById(id); if(e) e.classList.remove("hidden"); }
+function hide(id)     { var e=document.getElementById(id); if(e) e.classList.add("hidden"); }
+function hideStatus() { hide("status-area"); }
 function showStatus(msg, type) {
-  var area = document.getElementById("status-area");
-  area.className = type || "info";
+  var a=document.getElementById("status-area");
+  a.className = type||"info";
   document.getElementById("status-message").textContent = msg;
   show("status-area");
 }
