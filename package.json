@@ -1,13 +1,20 @@
 {
   "name": "fillflow",
-  "version": "0.1.0",
+  "version": "0.9.0",
   "description": "Word Data Merge / Report Generator Office Add-in",
   "scripts": {
     "start": "node server.js",
-    "build": "node scripts/copy-assets.js"
+    "install-certs": "npx office-addin-dev-certs install",
+    "validate": "office-addin-manifest validate manifest.xml",
+    "build": "node scripts/copy-assets.js",
+    "generate-samples": "python3 scripts/generate_samples.py"
   },
   "dependencies": {
     "xlsx": "^0.18.5"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "office-addin-debugging": "^6.0.4",
+    "office-addin-manifest": "^2.1.0",
+    "office-addin-dev-certs": "^2.0.4"
+  }
 }
