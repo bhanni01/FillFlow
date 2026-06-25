@@ -1,6 +1,6 @@
 {
   "name": "fillflow",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Word Data Merge / Report Generator Office Add-in",
   "scripts": {
     "start": "node server.js",
@@ -13,8 +13,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "office-addin-debugging": "^6.0.4",
-    "office-addin-manifest": "^2.1.0",
-    "office-addin-dev-certs": "^2.0.4"
+    "office-addin-debugging": "^6.1.1",
+    "office-addin-manifest": "^2.1.5",
+    "office-addin-dev-certs": "^2.0.9"
   }
 }
